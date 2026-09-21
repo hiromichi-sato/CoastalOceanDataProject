@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aqua Level Lab | 観測解析</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/icon.svg"><link rel="stylesheet" href="/research.css"></head>
+<body>
+<header><strong>Aqua Level Lab</strong><span>海洋・水質 観測解析</span><a href="/index.html">取得ツール</a></header>
+<main>
+<form id="query">
+<h1>観測条件</h1>
+<label>水域<select name="area" id="area"></select></label>
+<fieldset id="custom-area" hidden><legend>経緯度範囲</legend><div class="pair"><label>西端<input name="west" type="number" value="140" min="120" max="155" step="any"></label><label>東端<input name="east" type="number" value="144" min="120" max="155" step="any"></label><label>南端<input name="south" type="number" value="30" min="20" max="47" step="any"></label><label>北端<input name="north" type="number" value="35" min="20" max="47" step="any"></label></div></fieldset>
+<label>項目<select name="metric" id="metric"></select></label>
+<div class="pair"><label>開始年<input name="start" type="number" min="1978" value="2010" required></label><label>終了年<input name="end" type="number" min="1978" value="2018" required></label></div>
+<label>年の区切り<select name="basis"><option value="calendar">暦年（1〜12月）</option><option value="fiscal">年度（4〜翌3月）</option></select></label>
+<label>季節<select name="season" id="season"><option value="all">全季節</option><option value="spring">春（3〜5月）</option><option value="summer">夏（6〜8月）</option><option value="autumn">秋（9〜11月）</option><option value="winter">冬（12・1・2月）</option></select></label>
+<fieldset><legend>対象月</legend><div id="months"></div></fieldset>
+<div class="pair"><label>採水深度 下限 (m)<input name="depthMin" type="number" min="0" max="12000" step="0.1" value="0" required></label><label>上限 (m)<input name="depthMax" type="number" min="0" max="12000" step="0.1" value="1" required></label></div>
+<fieldset><legend>データソース</legend><div id="source-options"></div></fieldset>
+<fieldset id="profile-options" hidden><legend>外部プロファイル</legend><label>空間集約幅（度）<select name="spatialBin"><option value="0.1">0.1</option><option value="0.25" selected>0.25</option><option value="0.5">0.5</option><option value="1">1</option></select></label><label>Argoデータモード<select name="argoMode"><option value="adjusted">調整済み（A・D）</option><option value="delayed">遅延品質管理済み（D）</option><option value="all">調整済み＋リアルタイム（R）</option></select></label><label>CCHDO航海番号（任意）<input name="cruise" pattern="[A-Za-z0-9_-]{0,40}" maxlength="40" placeholder="EXPocode"></label></fieldset>
+<label>集約<select name="aggregation"><option value="equal-year">月・年を均等に平均</option><option value="sample">観測件数で加重平均</option></select></label>
+<label>定量下限未満<select name="censor"><option value="exclude">除外</option><option value="half">下限値の1/2</option></select></label>
+<button id="run" type="submit">取得して表示</button>
+</form>
+<section id="results" aria-label="解析結果">
+<div class="result-heading"><h1 id="title">観測解析</h1><span id="count"></span></div>
+<p id="status" role="status" aria-live="polite">条件を選択して実観測値を表示できます。</p>
+<div id="warnings" role="note"></div>
+<div class="controls">
+<label>表示対象<select id="source-view"><option value="all">選択ソースを統合</option></select></label>
+<label>コンター<select id="kind"><option value="both">塗り分け＋等値線</option><option value="filled">塗り分け</option><option value="lines">等値線</option><option value="points">観測点</option></select></label>
+<label>色<select id="palette"><option value="viridis">Viridis</option><option value="turbo">Turbo</option><option value="diverging">青・白・赤</option></select></label>
+<label>最小値<input id="minimum" type="number" step="any" placeholder="自動"></label>
+<label>最大値<input id="maximum" type="number" step="any" placeholder="自動"></label>
+<label>等値線間隔<input id="interval" type="number" step="any" min="0" placeholder="自動"></label>
+<label>格子<select id="resolution"><option value="48">48</option><option value="64" selected>64</option><option value="96">96</option></select></label>
+</div>
+<p id="display-error" role="alert"></p>
+<svg id="map" role="img" aria-label="海岸線付き拡散補間コンター"></svg>
+<div id="legend"></div>
+<div class="downloads"><button id="nc" disabled>NetCDF (.nc)</button><button id="shape" disabled>Shapefile (.zip)</button><button id="csv" disabled>観測点平均 (.csv)</button></div>
+<p id="export-status" role="status"></p>
+<div class="charts"><section><h2>年別平均</h2><svg id="yearly" role="img" aria-label="年別平均"></svg></section><section><h2>月別平均</h2><svg id="monthly" role="img" aria-label="月別平均"></svg></section></div>
+<details><summary>年月別の観測数・欠測</summary><div class="coverage-scroll"><table id="coverage"></table></div></details>
+<h2>解析記録</h2><dl id="record"></dl>
+<h2>データ出典</h2><div id="provenance"></div>
+<footer>海岸線：<a href="https://www.gsi.go.jp/kankyochiri/gm_jpn.html">国土地理院 地球地図日本</a> / dataofjapan。補間は定常拡散方程式の解であり、海流・移流を含む予測ではありません。</footer>
+</section>
+</main>
+<script src="/vendor/d3.v7.min.js"></script><script src="/vendor/topojson-client.min.js"></script><script src="/vendor/clipper.js"></script><script src="/safe-clipping.js"></script><script src="/vendor/shpwrite.js"></script><script src="/vendor/jszip.min.js"></script><script src="/contour-export.js"></script><script type="module" src="/research.js"></script>
+</body></html>

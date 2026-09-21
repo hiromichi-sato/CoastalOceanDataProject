@@ -395,6 +395,9 @@ async function showVisualization() {
     const response = await fetch(`/api/visual-data?${params}`);
     const data = await response.json();
     if (!response.ok || data.error) throw new Error(data.error || "表示データを取得できませんでした。");
+    data.query = Object.fromEntries(params);
+    data.metricKey = params.get('metric');
+    data.provenance = { request: new URL(`/api/visual-data?${params}`, location.href).href, retrievedAt: new Date().toISOString() };
     visualization.hidden = false;
     demoNote.hidden = true;
     vizTitle.textContent = `${data.area} ${data.metric}`;

@@ -257,6 +257,11 @@
                 </div>
                 <p class="map-status" id="map-status" role="status" hidden></p>
                 <svg id="contour-view" viewBox="0 0 480 375" role="img" aria-label="海岸線・陸地付きコンター地図"></svg>
+                <div class="contour-exports" aria-label="コンター保存">
+                  <button type="button" data-contour-export="nc" disabled>NetCDF (.nc)</button>
+                  <button type="button" data-contour-export="shape" disabled>Shapefile (.zip)</button>
+                </div>
+                <p id="contour-export-status" role="status" aria-live="polite"></p>
                 <div class="map-legend" id="map-legend" hidden>
                   <span id="map-metric"></span>
                   <span id="map-period"></span>
@@ -314,6 +319,11 @@
     </div>
     <script src="/vendor/d3.v7.min.js"></script>
     <script src="/vendor/topojson-client.min.js"></script>
+    <script src="/vendor/clipper.js"></script>
+    <script src="/safe-clipping.js"></script>
+    <script src="/vendor/shpwrite.js"></script>
+    <script src="/vendor/jszip.min.js"></script>
+    <script src="/contour-export.js"></script>
     <script src="/app.js" type="module"></script>
   </body>
 </html>

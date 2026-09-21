@@ -33,6 +33,10 @@ export class ContourMap {
     this.requestId = 0;
     this.data = null;
     this.baseMap = null;
+    this.exportData = null;
+    for (const button of document.querySelectorAll('[data-contour-export]')) {
+      button.addEventListener('click', () => this.export(button));
+    }
     this.resizeObserver = new ResizeObserver(() => {
       if (this.data && this.baseMap) this.draw();
     });
@@ -45,6 +49,8 @@ export class ContourMap {
   clear() {
     this.requestId += 1;
     this.data = null;
+    this.exportData = null;
+    document.querySelectorAll('[data-contour-export]').forEach((button) => { button.disabled = true; });
     this.svg.replaceChildren();
     this.legend.hidden = true;
     this.status.hidden = true;
@@ -130,7 +136,7 @@ export class ContourMap {
       ...point, position: projection([point.longitude, point.latitude])
     }));
     const field = map.append("g").attr("class", "map-field").attr("mask", "url(#map-water-mask)");
-    this.drawField(field, projected, color);
+    this.drawField(field, projected, color, projection, { left, top, right, bottom });
     map.append("path").attr("class", "map-land").attr("d", landPath)
       .attr("fill", "#e2e7e2").attr("stroke", "#697b78").attr("stroke-width", 1);
 
@@ -158,7 +164,27 @@ export class ContourMap {
     this.updateLayers();
   }
 
-  drawField(field, points, color) {
+  async export(button) {
+    const snapshot = this.exportData;
+    if (!snapshot) return;
+    const status = document.querySelector('#contour-export-status');
+    button.disabled = true;
+    status.textContent = 'ファイルを作成中…';
+    try {
+      const { grid, bands, metadata } = snapshot;
+      const shape = button.dataset.contourExport === 'shape';
+      const blob = shape ? await window.AquaExport.shapefile(bands, metadata)
+        : new Blob([window.AquaExport.netcdf(grid, metadata)], { type: 'application/x-netcdf' });
+      const name = `aqua-${metadata.mode === 'demo' ? 'DEMO-' : ''}${metadata.metricKey || 'contour'}-${metadata.createdAt.slice(0, 10)}`;
+      window.AquaExport.download(blob, `${name}.${shape ? 'zip' : 'nc'}`);
+      status.textContent = shape ? 'Shapefile ZIP を保存しました。' : 'NetCDF を保存しました。';
+    } catch (error) { status.textContent = `保存できませんでした: ${error.message}`; }
+    finally { button.disabled = !this.exportData; }
+  }
+
+  drawField(field, points, color, projection, frame) {
+    this.exportData = null;
+    document.querySelectorAll('[data-contour-export]').forEach((button) => { button.disabled = true; });
     const [minX, maxX] = d3.extent(points, (point) => point.position[0]);
     const [minY, maxY] = d3.extent(points, (point) => point.position[1]);
     if (points.length < 3 || maxX - minX < 1 || maxY - minY < 1) return;
@@ -184,10 +210,48 @@ export class ContourMap {
     const [min, max] = d3.extent(values);
     const thresholds = [min, ...d3.ticks(min, max, 8).filter((value) => value > min)];
     const contours = d3.contours().size([cols, rows]).thresholds(thresholds)(values);
-    const path = d3.geoPath(d3.geoIdentity().scale(cell).translate([minX, minY]));
-    field.attr("opacity", 0.58).selectAll("path").data(contours).join("path")
-      .attr("d", path).attr("fill", (contour) => color(contour.value))
+    const toPixel = (coordinates) => coordinates.map((polygon) => polygon.map((ring) => ring.map(([x, y]) => [minX + x * cell, minY + y * cell])));
+    const rectangle = [[[[frame.left, frame.top], [frame.right, frame.top], [frame.right, frame.bottom], [frame.left, frame.bottom], [frame.left, frame.top]]]];
+    const land = this.baseMap.land.coordinates.map((polygon) => polygon.map((ring) => ring.map((p) => projection(p))));
+    const landInFrame = window.AquaClip.intersection(land, rectangle);
+    const sea = window.AquaClip.difference(rectangle, landInFrame);
+    const clipped = contours.map((contour) => window.AquaClip.intersection(toPixel(contour.coordinates), sea));
+    const bands = clipped.map((coordinates, i) => ({
+      lower: contours[i].value, upper: contours[i + 1]?.value ?? max,
+      coordinates: i + 1 < clipped.length ? window.AquaClip.difference(coordinates, clipped[i + 1]) : coordinates
+    })).filter((band) => band.coordinates.length);
+    const path = d3.geoPath(d3.geoIdentity());
+    field.attr("opacity", 0.58).selectAll("path").data(bands).join("path")
+      .attr("d", (band) => path({ type: 'MultiPolygon', coordinates: band.coordinates })).attr("fill", (band) => color(band.lower))
       .attr("stroke", "#ffffff").attr("stroke-opacity", 0.45).attr("stroke-width", 0.55);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(frame.right + 1); canvas.height = Math.ceil(frame.bottom + 1);
+    const context = canvas.getContext('2d');
+    const landShape = new Path2D(d3.geoPath(projection)(this.baseMap.land));
+    const water = values.map((_, i) => {
+      const x = minX + (i % cols + 0.5) * cell;
+      const y = minY + (Math.floor(i / cols) + 0.5) * cell;
+      return x >= frame.left && x <= frame.right && y >= frame.top && y <= frame.bottom && !context.isPointInPath(landShape, x, y);
+    });
+    const metadata = {
+      createdAt: new Date().toISOString(), mode: this.data.mode || 'observations',
+      metric: this.data.metric, metricKey: this.data.metricKey, unit: this.data.unit,
+      area: this.data.area, year: this.data.year, query: this.data.query,
+      provenance: this.data.provenance, sources: [...new Set(points.map((point) => point.source).filter(Boolean))],
+      crs: 'EPSG:4326', interpolation: 'inverse-distance weighting, power 2',
+      note: 'Current display uses IDW, not a diffusion-equation solution. Grid resolution depends on display size. Land is masked after interpolation; this is not a no-flux coast boundary.',
+      grid: { cols, rows, cellPixels: cell }, thresholds, observationCount: points.length,
+      coastline: 'GSI Global Map Japan via dataofjapan/land',
+      observations: this.data.points
+    };
+    this.exportData = {
+      metadata,
+      grid: { cols, rows, values, water,
+        longitude: d3.range(cols).map((col) => projection.invert([minX + (col + 0.5) * cell, minY])[0]),
+        latitude: d3.range(rows).map((row) => projection.invert([minX, minY + (row + 0.5) * cell])[1]) },
+      bands: bands.map((band) => ({ ...band, coordinates: band.coordinates.map((polygon) => polygon.map((ring) => ring.map((p) => projection.invert(p)))) }))
+    };
+    document.querySelectorAll('[data-contour-export]').forEach((button) => { button.disabled = !bands.length; });
   }
 
   drawAxes(svg, map, projection, { left, top, right, bottom }) {

@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { areas, metrics, sources, seasons } from './lib/catalog.js';
+import { parseQuery, getObservations } from './lib/observations.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -399,6 +401,17 @@ async function handleVisualData(res, url) {
 }
 
 async function handleApi(req, res, url) {
+  if (req.method === 'GET' && url.pathname === '/api/catalog') {
+    sendJson(res, 200, { areas, metrics, sources, seasons }); return;
+  }
+  if (req.method === 'GET' && url.pathname === '/api/observations') {
+    let query;
+    try { query = parseQuery(url.searchParams); }
+    catch (error) { sendJson(res, 400, { error: error.message }); return; }
+    try { sendJson(res, 200, await getObservations(query)); }
+    catch (error) { sendJson(res, 502, { error: error.message }); }
+    return;
+  }
   if (req.method === "GET" && url.pathname === "/api/health") {
     sendJson(res, 200, { application: "aqua-level-lab" });
     return;
@@ -479,9 +492,9 @@ async function proxyFile(res, remoteUrl) {
 }
 
 async function serveStatic(req, res, url) {
-  const requested = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
+  const requested = url.pathname === "/" ? "/research.html" : decodeURIComponent(url.pathname);
   const fullPath = path.normalize(path.join(publicDir, requested));
-  if (!fullPath.startsWith(publicDir) || !existsSync(fullPath)) {
+  if (path.relative(publicDir, fullPath).startsWith('..') || !existsSync(fullPath)) {
     res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     res.end("Not found");
     return;

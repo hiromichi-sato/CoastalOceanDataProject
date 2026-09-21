@@ -1,9 +1,21 @@
-const CACHE_NAME = "water-workbench-v5";
+const CACHE_NAME = "water-workbench-v10";
 const APP_SHELL = [
   "/",
+  "/research.html",
+  "/research.css",
+  "/research.js",
+  "/research-map.js",
+  "/diffusion.js",
+  "/diffusion-worker.js",
+  "/vendor/numeric-1.2.6.min.js",
   "/styles.css",
   "/app.js",
   "/contour-map.js",
+  "/contour-export.js",
+  "/vendor/clipper.js",
+  "/safe-clipping.js",
+  "/vendor/shpwrite.js",
+  "/vendor/jszip.min.js",
   "/vendor/d3.v7.min.js",
   "/vendor/topojson-client.min.js",
   "/data/japan.topo.json",
@@ -28,6 +40,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.pathname.startsWith("/api/")) return;
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
