@@ -7,7 +7,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "check": "node --check server.js",
-    "test": "node --test scripts/test-science.mjs scripts/test-external.mjs"
+    "test": "node --test scripts/test-science.mjs scripts/test-external.mjs scripts/test-startup.mjs"
   },
   "engines": {
     "node": ">=18"

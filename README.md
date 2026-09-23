@@ -111,7 +111,9 @@ PWA 用の `manifest.webmanifest` と `sw.js` を含めています。
 
 正本はルートの `server.js`、`lib/`、`public/` です。展開済み `Aqua-Level-Lab-Windows-x64/` と実行結果 `artifacts/` はローカル専用で、Gitには含めません。手元に残っていても、それらのコピーは自動更新されません。
 
-- `npm test`: ネットワーク不要の科学計算・外部ソース正規化・極小線分の回帰テスト16件。
+- `start-windows.cmd`: 同梱Node.jsを優先し、このフォルダーのサーバーを空きポートで起動します。自動で開く新しいタブを使用してください。以前のタブや展開済みの別フォルダーは自動更新されません。固定ポートでの共有起動は `npm start` を使用します。
+- オンライン時は画面のHTML・JavaScriptをサーバーから再取得し、オフライン時だけ保存済みファイルを使用します。
+- `npm test`: 科学計算・外部ソース正規化・極小線分・起動・キャッシュ更新の回帰テスト（外部ネットワーク不要）。
 - `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1 -NodePath .\runtime\node.exe`: Windows起動アプリ・HTMLデモ・配布ZIPを再生成します。
 - `node scripts/verify-package.mjs`: ZIP内の全ファイルがルートの現行ファイルと一致することを確認します。
 - ブラウザ試験は別途PlaywrightとMicrosoft Edgeが必要です。`npm install --no-save --package-lock=false playwright` で導入し、起動したサーバーに合わせて `APP_URL` を設定して `node scripts/test-research.cjs` または `node scripts/test-external-ui.cjs` を実行してください。既存のPlaywrightを使う場合は `PLAYWRIGHT_PATH` を指定できます。

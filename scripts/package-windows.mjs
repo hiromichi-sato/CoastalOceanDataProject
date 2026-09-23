@@ -17,7 +17,7 @@ async function add(relative) {
     }
   } else zip.file(relative.replaceAll('\\', '/'), await readFile(absolute));
 }
-for (const file of ['AquaLevelLab.exe', 'Aqua-Level-Lab-Demo.html', 'server.js', 'package.json', 'lib/catalog.js', 'lib/observations.js', 'lib/profiles.js', 'lib/seawater.js', 'lib/vendor/seawater.LICENSE', 'public', 'runtime', 'START-HERE.txt', 'README.md', 'SCIENTIFIC-METHOD.md']) await add(file);
+for (const file of ['AquaLevelLab.exe', 'Aqua-Level-Lab-Demo.html', 'start-windows.cmd', 'server.js', 'package.json', 'lib/catalog.js', 'lib/observations.js', 'lib/profiles.js', 'lib/seawater.js', 'lib/vendor/seawater.LICENSE', 'public', 'runtime', 'START-HERE.txt', 'README.md', 'SCIENTIFIC-METHOD.md']) await add(file);
 const bytes = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 } });
 const output = path.join(root, 'Aqua-Level-Lab-Windows-x64.zip');
 await writeFile(output + '.tmp', bytes);

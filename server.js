@@ -501,7 +501,7 @@ async function serveStatic(req, res, url) {
   }
 
   const ext = path.extname(fullPath).toLowerCase();
-  res.writeHead(200, { "content-type": mimeTypes[ext] || "application/octet-stream" });
+  res.writeHead(200, { "content-type": mimeTypes[ext] || "application/octet-stream", "cache-control": "no-cache" });
   createReadStream(fullPath).pipe(res);
 }
 
@@ -518,7 +518,7 @@ server.listen(PORT, desktopLaunch ? "127.0.0.1" : process.env.HOST || undefined,
   if (desktopLaunch) {
     console.log(JSON.stringify({ type: "aqua-ready", port: server.address().port }));
   }
-  const appUrl = `http://localhost:${server.address().port}`;
+  const appUrl = `http://${desktopLaunch ? '127.0.0.1' : 'localhost'}:${server.address().port}`;
   console.log(`Aqua Level Lab is running at ${appUrl}`);
   console.log("Keep this window open while using the app. Press Ctrl+C to stop.");
 
