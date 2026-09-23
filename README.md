@@ -58,7 +58,7 @@ node server.js
 
 ## データソース
 
-登録済みソース:
+実取得できるソースは環境省（広域総合・公共用水域）、Argo、CCHDOです。以下は旧取得ツールの参考リンク集であり、すべてに取得コネクタがあるわけではありません。
 
 - 環境省 水環境総合情報サイト
 - 東京都環境局 公共用水域水質測定結果
@@ -73,6 +73,10 @@ node server.js
 - Argo GDAC プロファイルデータ
 
 ## 表示機能
+
+起動画面の「取得して表示」は、25項目、複数年・月・季節・深度、ソース別表示、定常拡散補間に対応します。
+
+以下は旧取得ツール `/index.html` の機能です。現在の実観測解析とは計算方式が異なります。
 
 「グラフ・コンターを表示」を押すと、ダウンロードを経由せず ArcGIS REST API から地点データを直接取得し、平均グラフとコンター風の空間分布を表示します。
 
@@ -102,3 +106,14 @@ node server.js
 ## スマホへのインストール
 
 PWA 用の `manifest.webmanifest` と `sw.js` を含めています。
+
+## 開発・配布の整合性
+
+正本はルートの `server.js`、`lib/`、`public/` です。展開済み `Aqua-Level-Lab-Windows-x64/` と実行結果 `artifacts/` はローカル専用で、Gitには含めません。手元に残っていても、それらのコピーは自動更新されません。
+
+- `npm test`: ネットワーク不要の科学計算・外部ソース正規化・極小線分の回帰テスト16件。
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1 -NodePath .\runtime\node.exe`: Windows起動アプリ・HTMLデモ・配布ZIPを再生成します。
+- `node scripts/verify-package.mjs`: ZIP内の全ファイルがルートの現行ファイルと一致することを確認します。
+- ブラウザ試験は別途PlaywrightとMicrosoft Edgeが必要です。`npm install --no-save --package-lock=false playwright` で導入し、起動したサーバーに合わせて `APP_URL` を設定して `node scripts/test-research.cjs` または `node scripts/test-external-ui.cjs` を実行してください。既存のPlaywrightを使う場合は `PLAYWRIGHT_PATH` を指定できます。
+
+ソース変更後はテストと配布ZIPの再生成・照合を行い、ソースと生成物を同じコミットで公開します。GitHubへのソース公開だけではNode.jsサーバーは稼働しません。ZIPをダウンロードして展開するか、Node.js実行環境で起動してください。

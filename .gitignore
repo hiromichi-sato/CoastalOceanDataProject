@@ -1,0 +1,13 @@
+# Local runs and extracted distribution copies are not source files.
+/Aqua-Level-Lab-Windows-x64/
+/artifacts/
+/node_modules/
+*.log
+*.tmp
+.env
+.env.*
+!.env.example
+# Research references not used or licensed for redistribution by this project.
+/lib/vendor/TEOS10_*.js
+/lib/vendor/*-reference.py
+/00.仕様書.md
