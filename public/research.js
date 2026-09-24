@@ -1,4 +1,5 @@
 import { prepareGrid, drawMap } from './research-map.js';
+import { createAreaPicker } from './area-picker.js';
 const $ = (s) => document.querySelector(s);
 const form = $('#query');
 let catalog, data, grid, rendered, points, worker, cancelSolve, generation = 0, fetching = false;
@@ -24,6 +25,27 @@ async function initialize() {
   for(const el of form.querySelectorAll('[name=start],[name=end]')) el.max=new Date().getFullYear();
 }
 $('#area').addEventListener('change',()=>{$('#custom-area').hidden=$('#area').value!=='custom';});
+let pendingArea=null;
+const areaPicker=createAreaPicker($('#area-map'),(bounds)=>{
+  pendingArea=bounds;
+  $('#area-west').textContent=bounds.west.toFixed(2)+'°E'; $('#area-east').textContent=bounds.east.toFixed(2)+'°E';
+  $('#area-south').textContent=bounds.south.toFixed(2)+'°N'; $('#area-north').textContent=bounds.north.toFixed(2)+'°N';
+  $('#area-apply').disabled=false;
+});
+$('#pick-area').addEventListener('click',async()=>{
+  pendingArea=null; $('#area-apply').disabled=true;
+  for(const id of ['area-west','area-east','area-south','area-north']) $('#'+id).textContent='—';
+  $('#area-dialog').showModal();
+  await areaPicker.draw();
+  areaPicker.setBounds({west:Number(form.west.value),east:Number(form.east.value),south:Number(form.south.value),north:Number(form.north.value)});
+});
+$('#area-cancel').addEventListener('click',()=>$('#area-dialog').close());
+$('#area-apply').addEventListener('click',()=>{
+  if(!pendingArea) return;
+  form.west.value=pendingArea.west.toFixed(3); form.east.value=pendingArea.east.toFixed(3);
+  form.south.value=pendingArea.south.toFixed(3); form.north.value=pendingArea.north.toFixed(3);
+  $('#area-dialog').close();
+});
 form.addEventListener('submit',async(event)=>{
   event.preventDefault();
   const id=++generation; cancelSolve?.(); worker?.terminate(); setExport(false); rendered=null; grid=null; data=null;

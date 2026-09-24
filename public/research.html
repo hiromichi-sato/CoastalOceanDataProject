@@ -7,7 +7,7 @@
 <form id="query">
 <h1>観測条件</h1>
 <label>水域<select name="area" id="area"></select></label>
-<fieldset id="custom-area" hidden><legend>経緯度範囲</legend><div class="pair"><label>西端<input name="west" type="number" value="140" min="120" max="155" step="any"></label><label>東端<input name="east" type="number" value="144" min="120" max="155" step="any"></label><label>南端<input name="south" type="number" value="30" min="20" max="47" step="any"></label><label>北端<input name="north" type="number" value="35" min="20" max="47" step="any"></label></div></fieldset>
+<fieldset id="custom-area" hidden><legend>経緯度範囲</legend><div class="pair"><label>西端<input name="west" type="number" value="140" min="120" max="155" step="any"></label><label>東端<input name="east" type="number" value="144" min="120" max="155" step="any"></label><label>南端<input name="south" type="number" value="30" min="20" max="47" step="any"></label><label>北端<input name="north" type="number" value="35" min="20" max="47" step="any"></label></div><button type="button" id="pick-area">地図で選択</button></fieldset>
 <label>項目<select name="metric" id="metric"></select></label>
 <div class="pair"><label>開始年<input name="start" type="number" min="1978" value="2010" required></label><label>終了年<input name="end" type="number" min="1978" value="2018" required></label></div>
 <label>年の区切り<select name="basis"><option value="calendar">暦年（1〜12月）</option><option value="fiscal">年度（4〜翌3月）</option></select></label>
@@ -45,5 +45,20 @@
 <footer>海岸線：<a href="https://www.gsi.go.jp/kankyochiri/gm_jpn.html">国土地理院 地球地図日本</a> / dataofjapan。補間は定常拡散方程式の解であり、海流・移流を含む予測ではありません。</footer>
 </section>
 </main>
+<dialog id="area-dialog">
+  <h2>範囲を地図で選択</h2>
+  <p>地図をドラッグして、データ取得範囲の矩形を描いてください。</p>
+  <svg id="area-map" role="img" aria-label="範囲選択地図"></svg>
+  <div class="pair area-readout">
+    <label>西端<output id="area-west">—</output></label>
+    <label>東端<output id="area-east">—</output></label>
+    <label>南端<output id="area-south">—</output></label>
+    <label>北端<output id="area-north">—</output></label>
+  </div>
+  <div class="dialog-actions">
+    <button type="button" id="area-cancel">キャンセル</button>
+    <button type="button" id="area-apply" disabled>この範囲を使う</button>
+  </div>
+</dialog>
 <script src="/vendor/d3.v7.min.js"></script><script src="/vendor/topojson-client.min.js"></script><script src="/vendor/clipper.js"></script><script src="/safe-clipping.js"></script><script src="/vendor/shpwrite.js"></script><script src="/vendor/jszip.min.js"></script><script src="/contour-export.js"></script><script type="module" src="/research.js"></script>
 </body></html>
